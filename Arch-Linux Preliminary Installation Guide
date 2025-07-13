@@ -1,0 +1,157 @@
+localectl list-keymaps
+
+loadkeys #it
+
+Check that we are in UEFI mode
+cat /sys/firmware/efi
+
+wifi:
+iwclt
+  device list
+  station wlan0 scan
+  station wlan0 get-networks
+  station "name" connect SSID
+  
+Check the internet connection
+
+ping -c 3 google.com
+
+system clock
+
+timedatectl set-ntp true
+systemctl enable systemd-timesyncd.service
+
+cfdisk or fdisk
+partition efi   512mib
+partition /     ****
+partition swap  2gb
+
+lsblk
+
+mkfs.fat -F 32 /dev/***1 <partition efi>
+
+mkfs.ext4 or mkfs.btrfs /dev/***2 /
+
+mkswap /dev/***3
+
+swapon /dev/***3
+
+disk mounting btrfs
+
+btrfs subvolume create /mnt/@
+btrfs subvolume create /mnt/@home
+
+umount /mnt
+
+mount -o compress=zstd,subvol=@ /dev/***2 /mnt
+mkdir -p /mnt/home
+mount -o compress=zstd,subvol=@home /dev/***2 /mnt/home
+
+mkdir -p /mnt/efi
+mount /dev/***1 /mnt/efi
+
+pacstrap -K /mnt base base-devel linux linux-firmware git btrfs-progs grub efibootmgr grub-btrfs inotify-tools timeshift vim networkmanager man sudo bash-completion
+
+arch-chroot /mnt
+
+ln -sf /usr/share/zoneinfo/"your_location" /etc/localtime
+
+hwclock --systohc
+
+nano /etc/locale.gen
+
+locale-gen
+
+nano /etc/locale.conf
+    "LANG=it_IT.UTF-8
+    LC_MESSAGES=en_US.UTF-8
+    "
+
+nano /etc/vconsole.conf
+    "KEYMAP=your_key_map
+    "
+
+nano /etc/hostname
+    "your_hostname"
+
+nano /etc/hosts
+    "127.0.0.1 localhost
+    ::1 localhost
+    127.0.1.1 Your_Hostname
+    "
+
+passwd
+
+useradd -mG wheel your_USER
+
+passwd your_USER
+
+nano /etc/sudoers
+    "your_USER ALL=(ALL:ALL) ALL"
+
+
+GRUB efi
+grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
+grub-mkconfig -o /boot/grub/grub.cfg
+
+grub bios
+grub-install --target=i386-pc /dev/*** // grub-install --target=i386-pc /dev/sdx
+grub-mkconfig -o /boot/grub/grub.cfg
+
+systemctl enable NetworkManager
+
+Exit from chroot
+    exit
+
+umount -R /mnt
+
+reboot
+
+timedatectl set-ntp true
+
+Automatic snapshot boot
+sudo systemctl edit --full grub-btrfsd
+
+sudo systemctl enable grub-btrfsd
+
+
+sudo nano /etc/pacman.conf
+
+Install your video drivers, if you use AMD radeon, Nvidia Nouveau, or Intel, Wayland or XORG
+
+Uncomment. removing the #
+
+    "[multilib]
+    Include = /etc/pacman.d/mirrorlist
+    "
+
+    nvidia
+sudo pacman -Syu
+sudo pacman -S nvidia-lts // sudo pacman -S nvidia-open-lts // sudo pacman -S vulkan-nouveau nouveau  lib32-vulkan-nouveau
+
+radeon amd
+sudo pacman -Syu
+
+sudo pacman -S mesa vulkan-radeon libva-mesa-driver mesa-vdpau
+sudo pacman -S lib32-mesa lib32-vulkan-radeon lib32-libva-mesa-driver lib32-mesa-vdpau
+
+intel
+sudo pacman -S intel-media-driver lib32-vulkan-intel
+
+mesa
+sudo pacman -S mesa
+
+sound driver
+sudo pacman -S lib32-pipewire pipewire pipewire-alsa pipewire-pulse
+
+then install your favorite desktop, for me, nothing beats Plasma.
+
+sudo pacman -S plasma-desktop apparmor plasma-firewall plasma-browser-integration bluedevil powerdevil tunned-ppd kdeplasma-addons xdg-desktop-portal-kde xwaylandvideobridge kde-gtk-config cups print-manager konsole dolphin ffmpegthumbs firefox kate okular gwenview ark pinta spectacle dragon sddm sddm-kcm flatpak-kcm
+
+systemctl enable apparmor.service
+
+sudo systemctl enable sddm
+
+gameing
+sudo pacman -S gamemode gamemoded wine-staging winetricks mangohud goverlay gamescope
+
