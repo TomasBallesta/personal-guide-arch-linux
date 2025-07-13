@@ -22,13 +22,13 @@ timedatectl set-ntp true
 systemctl enable systemd-timesyncd.service
 
 cfdisk or fdisk
-partition efi   512mib
+partition efi   512mib //partition boot
 partition /     ****
 partition swap  2gb
 
 lsblk
 
-mkfs.fat -F 32 /dev/***1 <partition efi>
+mkfs.fat -F 32 /dev/***1 <partition efi/boot>
 
 mkfs.ext4 or mkfs.btrfs /dev/***2 /
 
@@ -49,6 +49,18 @@ mount -o compress=zstd,subvol=@home /dev/***2 /mnt/home
 
 mkdir -p /mnt/efi
 mount /dev/***1 /mnt/efi
+
+genfstab -U /mnt >> /mnt/etc/fstab
+
+cat /mnt/etc/fstab
+"# /dev/sda1
+UUID=******************1    /boot //or efi     <omitted_details_here> 
+
+# /dev/******************2                      
+UUID=******************2    /                  <omitted_details_here>                         
+
+# /dev/******************3
+UUID=******************3   swap                <omitted_details_here>"
 
 pacstrap -K /mnt base base-devel linux linux-firmware git btrfs-progs grub efibootmgr grub-btrfs inotify-tools timeshift vim networkmanager man sudo bash-completion
 
@@ -88,7 +100,6 @@ passwd your_USER
 
 nano /etc/sudoers
     "your_USER ALL=(ALL:ALL) ALL"
-
 
 GRUB efi
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
